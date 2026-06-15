@@ -4,9 +4,16 @@
 ### Backend Engineer · Data Engineer
 `FastAPI` · `Django` · `ETL Pipelines` · `Python`
 
-![Python](https://img.shields.io/badge/Python-3776AB?style=flat&logo=python&logoColor=white)
+![Python](https://img.shields.io/badge/Python_3.12-3776AB?style=flat&logo=python&logoColor=white)
 ![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=flat&logo=fastapi&logoColor=white)
 ![Django](https://img.shields.io/badge/Django-092E20?style=flat&logo=django&logoColor=white)
+![Apache Airflow](https://img.shields.io/badge/Airflow-017CEE?style=flat&logo=apacheairflow&logoColor=white)
+![Apache Spark](https://img.shields.io/badge/Spark-E25A1C?style=flat&logo=apachespark&logoColor=white)
+![Kafka](https://img.shields.io/badge/Kafka-231F20?style=flat&logo=apachekafka&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=flat&logo=postgresql&logoColor=white)
+![Snowflake](https://img.shields.io/badge/Snowflake-29B5E8?style=flat&logo=snowflake&logoColor=white)
+![AWS](https://img.shields.io/badge/AWS-232F3E?style=flat&logo=amazonaws&logoColor=white)
+![Terraform](https://img.shields.io/badge/Terraform-7B42BC?style=flat&logo=terraform&logoColor=white)
 
 </div>
 
@@ -28,447 +35,384 @@ I'm a **Backend & Data Engineer** based in the United States, specializing in hi
 
 ### 1 · FastAPI Microservice Architecture
 
-A production-grade FastAPI service with async request handling, JWT auth, Redis caching, background task processing, and PostgreSQL persistence.
+A production-grade FastAPI service with async request handling, JWT auth, Redis caching, Celery background workers, and PostgreSQL persistence — deployed behind CloudFront and AWS ALB.
 
 ```mermaid
 graph TB
-    subgraph CLIENT["🌐 Client Layer"]
-        WEB[Web App / SPA]
-        MOB[Mobile Client]
-        EXT[External API Consumer]
-    end
-
-    subgraph GATEWAY["⚡ API Gateway & Edge"]
+    subgraph CLIENT["Client layer"]
         direction LR
-        CDN[CloudFront CDN]
-        LB[AWS ALB\nLoad Balancer]
-        WAF[WAF Rules\nRate Limiting]
+        WEB["Web / SPA"]
+        MOB["Mobile client"]
+        EXT["External API consumer"]
     end
 
-    subgraph FASTAPI["🚀 FastAPI Application — Uvicorn / Gunicorn Workers"]
+    subgraph GATEWAY["API gateway & edge"]
+        direction LR
+        CDN["CloudFront CDN"]
+        WAF["WAF + rate limiting"]
+        LB["AWS ALB"]
+    end
+
+    subgraph FASTAPI["FastAPI application — Uvicorn workers"]
         direction TB
-        ROUTER[APIRouter\nversioned endpoints]
 
-        subgraph MW["Middleware Stack"]
+        subgraph MW["Middleware chain"]
             direction LR
-            CORS[CORS\nMiddleware]
-            AUTH_MW[JWT Auth\nMiddleware]
-            LOG_MW[Structured\nLogging]
-            TRACE[OpenTelemetry\nTracing]
+            CORS["CORS"]
+            JWT["JWT auth"]
+            LOG["Structured logging"]
+            OTEL["OpenTelemetry"]
         end
 
-        subgraph HANDLERS["Request Handlers"]
+        subgraph HANDLERS["Route handlers"]
             direction LR
-            V1["/api/v1/\nusers"]
-            V2["/api/v1/\norders"]
-            V3["/api/v1/\nproducts"]
-            WS["/ws/\nWebSocket"]
+            R1["/api/v1/users"]
+            R2["/api/v1/orders"]
+            R3["/api/v1/products"]
+            R4["/ws real-time"]
         end
 
-        subgraph SERVICES["Service Layer"]
+        subgraph SVC["Service layer"]
             direction LR
-            AUTH_SVC[Auth\nService]
-            BIZ_SVC[Business\nLogic Service]
-            NOTIF_SVC[Notification\nService]
+            S1["Auth service"]
+            S2["Business logic"]
+            S3["Notification service"]
         end
 
-        subgraph DEPS["Dependency Injection"]
+        subgraph DI["Dependency injection"]
             direction LR
-            DB_DEP[DB Session\nProvider]
-            CACHE_DEP[Cache\nProvider]
-            USER_DEP[Current User\nProvider]
+            D1["DB session"]
+            D2["Cache provider"]
+            D3["Current user"]
         end
     end
 
-    subgraph TASKS["⚙️ Background Workers — Celery + Redis"]
+    subgraph WORKERS["Background workers — Celery + Redis"]
         direction LR
-        WORKER1[Email\nWorker]
-        WORKER2[Report Gen\nWorker]
-        WORKER3[Webhook\nDispatcher]
-        BEAT[Celery\nBeat Scheduler]
+        W1["Email worker"]
+        W2["Report worker"]
+        W3["Webhook dispatcher"]
+        BEAT["Celery Beat"]
     end
 
-    subgraph DATA["🗄️ Data & Cache Layer"]
-        direction TB
-        PG_WRITE[(PostgreSQL\nWrite Replica)]
-        PG_READ[(PostgreSQL\nRead Replica)]
-        REDIS_CACHE[(Redis\nSession & Cache)]
-        REDIS_Q[(Redis\nTask Queue)]
-        S3[S3\nObject Store]
-    end
-
-    subgraph OBS["📊 Observability"]
+    subgraph DATA["Data layer"]
         direction LR
-        PROM[Prometheus\nMetrics]
-        GRAF[Grafana\nDashboards]
-        SENTRY[Sentry\nError Tracking]
-        LOKI[Loki\nLog Aggregation]
+        PGW[("PostgreSQL write")]
+        PGR[("PostgreSQL read")]
+        RDS[("Redis cache")]
+        RDQ[("Redis queue")]
+        S3[("S3 object store")]
+    end
+
+    subgraph OBS["Observability"]
+        direction LR
+        PROM["Prometheus"]
+        GRAF["Grafana"]
+        SENTRY["Sentry"]
+        LOKI["Loki"]
     end
 
     WEB & MOB & EXT --> CDN --> WAF --> LB
-    LB --> ROUTER
-    ROUTER --> MW --> HANDLERS
-    HANDLERS --> SERVICES
-    SERVICES --> DEPS
-    DEPS --> DB_DEP & CACHE_DEP & USER_DEP
-    DB_DEP --> PG_WRITE & PG_READ
-    CACHE_DEP --> REDIS_CACHE
-    SERVICES --> REDIS_Q
-    REDIS_Q --> WORKER1 & WORKER2 & WORKER3
-    BEAT --> REDIS_Q
-    WORKER2 --> S3
-    HANDLERS --> PROM
+    LB --> MW
+    MW --> CORS --> JWT --> LOG --> OTEL
+    OTEL --> HANDLERS
+    HANDLERS --> SVC --> DI
+    DI --> D1 & D2 & D3
+    D1 --> PGW & PGR
+    D2 --> RDS
+    SVC --> RDQ
+    RDQ --> W1 & W2 & W3
+    BEAT --> RDQ
+    W2 --> S3
+    HANDLERS --> PROM --> GRAF
     FASTAPI --> LOKI --> GRAF
     FASTAPI --> SENTRY
-    PROM --> GRAF
 
-    style CLIENT fill:#1a1a2e,stroke:#4a9eff,color:#e0e0e0
-    style GATEWAY fill:#16213e,stroke:#4a9eff,color:#e0e0e0
-    style FASTAPI fill:#0f3460,stroke:#4a9eff,color:#e0e0e0
-    style TASKS fill:#1a2744,stroke:#7c83fd,color:#e0e0e0
-    style DATA fill:#1a2a1a,stroke:#52c788,color:#e0e0e0
-    style OBS fill:#2a1a2a,stroke:#c084fc,color:#e0e0e0
+    style CLIENT   fill:#1e1b4b,stroke:#818cf8,color:#e0e7ff
+    style GATEWAY  fill:#0c1a2e,stroke:#38bdf8,color:#e0f2fe
+    style FASTAPI  fill:#0f2840,stroke:#60a5fa,color:#dbeafe
+    style MW       fill:#1e3a5f,stroke:#93c5fd,color:#dbeafe
+    style HANDLERS fill:#1e3a5f,stroke:#93c5fd,color:#dbeafe
+    style SVC      fill:#1e3a5f,stroke:#93c5fd,color:#dbeafe
+    style DI       fill:#1e3a5f,stroke:#93c5fd,color:#dbeafe
+    style WORKERS  fill:#1c1917,stroke:#f59e0b,color:#fef3c7
+    style DATA     fill:#052e16,stroke:#4ade80,color:#dcfce7
+    style OBS      fill:#2d1b00,stroke:#fb923c,color:#ffedd5
 ```
 
 ---
 
 ### 2 · Django REST Framework — Multi-Tenant SaaS Backend
 
-A Django-based SaaS backend with tenant isolation, role-based access control, async task queuing, and a pluggable app architecture.
+Schema-per-tenant PostgreSQL isolation, RBAC middleware, pluggable installed apps split across Core / Business / API layers, Celery task queues, and external service integrations.
 
 ```mermaid
 graph TB
-    subgraph INGRESS["🔀 Ingress"]
+    NGINX["Nginx reverse proxy"]
+
+    subgraph MW["Django middleware chain"]
         direction LR
-        NGINX[Nginx\nReverse Proxy]
-        STATIC[WhiteNoise\nStatic Files]
+        SEC["Security"]
+        SESS["Session"]
+        TEN["TenantMiddleware"]
+        PERM["RBAC perms"]
     end
 
-    subgraph DJANGO["🦄 Django Application — Gunicorn WSGI"]
+    subgraph APPS["Installed apps — Gunicorn WSGI"]
         direction TB
 
-        subgraph MIDDLEWARE["Django Middleware Chain"]
+        subgraph CORE["Core apps"]
             direction LR
-            SEC[SecurityMiddleware]
-            SESS[SessionMiddleware]
-            TENANT_MW[TenantMiddleware\nschema routing]
-            PERM[PermissionMiddleware\nRBAC checks]
+            USR["users"]
+            TNT["tenants"]
+            ACL["permissions"]
         end
 
-        subgraph APPS["Installed Apps"]
-            direction TB
-            subgraph CORE_APPS["Core Apps"]
-                direction LR
-                USERS_APP[users\nCustom User Model]
-                TENANT_APP[tenants\nMulti-tenancy]
-                PERMS_APP[permissions\nRBAC + Groups]
-            end
-            subgraph BIZ_APPS["Business Apps"]
-                direction LR
-                BILLING[billing\nStripe Integration]
-                ORDERS[orders\nOrder Lifecycle]
-                PRODUCTS[products\nCatalog + Inventory]
-                REPORTS[reports\nAggregations]
-            end
-            subgraph API_APPS["API Layer"]
-                direction LR
-                DRF[djangorestframework\nSerializers + Views]
-                SWAGGER[drf-spectacular\nOpenAPI Schema]
-                SIMPLEJWT[SimpleJWT\nAuth Tokens]
-            end
+        subgraph BIZ["Business apps"]
+            direction LR
+            BILL["billing"]
+            ORD["orders"]
+            PROD["products"]
+            REP["reports"]
         end
 
-        subgraph ORM["Django ORM Layer"]
+        subgraph API["API layer"]
             direction LR
-            MANAGERS[Custom\nManagers]
-            SIGNALS[Django\nSignals]
-            Q_OBJ[Q Objects\nComplex Queries]
-        end
-
-        subgraph ADMIN["Django Admin"]
-            direction LR
-            ADMIN_SITE[Admin Site\nCustom Actions]
-            IMPORT_EXPORT[Import/Export\nCSV/XLSX]
+            DRF["DRF"]
+            SPEC["drf-spectacular"]
+            SJWT["SimpleJWT"]
+            STR["django-storages"]
         end
     end
 
-    subgraph CELERY_STACK["⚙️ Async Task System"]
-        direction TB
-        subgraph QUEUES["Celery Queues"]
-            direction LR
-            Q_DEFAULT[default\nqueue]
-            Q_HIGH[high-priority\nqueue]
-            Q_EMAIL[email\nqueue]
-            Q_REPORT[reports\nqueue]
-        end
-        FLOWER[Flower\nTask Monitor]
-        CELERY_BEAT[Celery Beat\nCron Scheduler]
-    end
-
-    subgraph STORAGE["🗄️ Persistence Layer"]
-        direction TB
-        subgraph DB_CLUSTER["PostgreSQL Cluster — Tenant Schemas"]
-            direction LR
-            PUBLIC_SCHEMA[(public\nshared schema)]
-            T1_SCHEMA[(tenant_acme\nschema)]
-            T2_SCHEMA[(tenant_globex\nschema)]
-        end
-        PGBOUNCER[PgBouncer\nConnection Pool]
-        REDIS[(Redis\nCache + Sessions)]
-        MINIO[(MinIO / S3\nMedia & Documents)]
-    end
-
-    subgraph EXTERNAL["🌍 External Integrations"]
+    subgraph PERSIST["Persistence"]
         direction LR
-        STRIPE[Stripe\nPayments]
-        SENDGRID[SendGrid\nEmail]
-        TWILIO[Twilio\nSMS]
-        WEBHOOK_OUT[Outbound\nWebhooks]
+        PGB["PgBouncer"]
+        subgraph SCHEMAS["PostgreSQL — tenant schemas"]
+            direction LR
+            PUB[("public")]
+            TA[("tenant_acme")]
+            TN[("tenant_n")]
+        end
+        RDS[("Redis")]
+        MNO[("S3 / MinIO")]
     end
 
-    NGINX --> STATIC
-    NGINX --> MIDDLEWARE
-    MIDDLEWARE --> SEC --> SESS --> TENANT_MW --> PERM
-    PERM --> APPS
-    APPS --> ORM --> PGBOUNCER --> DB_CLUSTER
-    APPS --> REDIS
-    APPS --> MINIO
-    BILLING --> STRIPE
-    BIZ_APPS --> QUEUES
-    CELERY_BEAT --> QUEUES
-    QUEUES --> FLOWER
-    Q_EMAIL --> SENDGRID
-    Q_EMAIL --> TWILIO
-    Q_REPORT --> MINIO
-    ORDERS --> WEBHOOK_OUT
+    subgraph CEL["Celery + Redis queues"]
+        direction LR
+        QD["default"]
+        QH["high-priority"]
+        QE["email"]
+        QB["Celery Beat"]
+        FLW["Flower monitor"]
+    end
 
-    style INGRESS fill:#1a1a1a,stroke:#ff6b6b,color:#e0e0e0
-    style DJANGO fill:#0d2137,stroke:#44b3c2,color:#e0e0e0
-    style CELERY_STACK fill:#1f1a2e,stroke:#9b59b6,color:#e0e0e0
-    style STORAGE fill:#1a2e1a,stroke:#2ecc71,color:#e0e0e0
-    style EXTERNAL fill:#2e1a1a,stroke:#e67e22,color:#e0e0e0
+    subgraph EXT["External integrations"]
+        direction LR
+        STRIPE["Stripe"]
+        SG["SendGrid"]
+        TW["Twilio"]
+        WH["Outbound webhooks"]
+    end
+
+    NGINX --> MW
+    SEC --> SESS --> TEN --> PERM --> APPS
+    APPS --> PGB --> SCHEMAS
+    APPS --> RDS
+    APPS --> MNO
+    BIZ --> QD & QH & QE
+    QB --> QD
+    QD & QH & QE --> FLW
+    BILL --> STRIPE
+    QE --> SG & TW
+    ORD --> WH
+
+    style MW      fill:#0f172a,stroke:#818cf8,color:#e0e7ff
+    style APPS    fill:#0c1a2e,stroke:#38bdf8,color:#e0f2fe
+    style CORE    fill:#1e3a5f,stroke:#93c5fd,color:#dbeafe
+    style BIZ     fill:#1e3a5f,stroke:#93c5fd,color:#dbeafe
+    style API     fill:#1e3a5f,stroke:#93c5fd,color:#dbeafe
+    style PERSIST fill:#052e16,stroke:#4ade80,color:#dcfce7
+    style SCHEMAS fill:#065f46,stroke:#6ee7b7,color:#d1fae5
+    style CEL     fill:#1c1917,stroke:#f59e0b,color:#fef3c7
+    style EXT     fill:#3b0764,stroke:#c084fc,color:#f3e8ff
 ```
 
 ---
 
 ### 3 · ETL / ELT Data Pipeline Architecture
 
-An end-to-end data pipeline covering ingestion from multiple sources, transformation layers, quality checks, and serving to downstream consumers.
+End-to-end batch and streaming pipeline: 6 source types → Kafka/Airbyte ingestion → Airflow DAG orchestration → Spark + dbt transformation → Great Expectations quality → Snowflake warehouse → BI / reverse-ETL serving.
 
 ```mermaid
-graph LR
-    subgraph SOURCES["📥 Data Sources"]
-        direction TB
-        PG_SRC[(PostgreSQL\nTransactional DB)]
-        MYSQL_SRC[(MySQL\nLegacy System)]
-        REST_SRC[REST APIs\nThird-party SaaS]
-        EVENTS[Kafka Topics\nEvent Streams]
-        FILES[S3 / SFTP\nCSV · JSON · Parquet]
-        WEBHOOKS[Inbound\nWebhooks]
-    end
-
-    subgraph INGEST["⬇️ Ingestion Layer"]
-        direction TB
-        CDC[Debezium CDC\nChange Data Capture]
-        KAFKA[Apache Kafka\nEvent Bus]
-        AIRBYTE[Airbyte\nBatch Connectors]
-        CUSTOM[Custom Python\nIngestion Scripts]
-    end
-
-    subgraph LANDING["🪣 Landing Zone — Raw Storage"]
+graph TB
+    subgraph SRC["Data sources"]
         direction LR
-        RAW_S3[S3 Raw Bucket\nJSON / Avro / CSV]
-        DELTA_RAW[Delta Lake\nRaw Tables]
+        PG[("PostgreSQL")]
+        MY[("MySQL")]
+        REST["REST APIs"]
+        KFK["Kafka events"]
+        S3I["S3 / SFTP files"]
+        WBH["Webhooks"]
     end
 
-    subgraph ORCHESTRATION["🎯 Orchestration — Apache Airflow"]
-        direction TB
-        subgraph DAGS["DAG Definitions"]
-            direction LR
-            DAG_ING[ingestion_dag\ndaily / hourly]
-            DAG_TRANS[transformation_dag\npost-ingestion trigger]
-            DAG_QC[quality_check_dag\nsla-enforced]
-            DAG_EXPORT[export_dag\nscheduled delivery]
-        end
-        AIRFLOW_SCHEDULER[Airflow Scheduler]
-        AIRFLOW_WORKERS[Airflow Workers\nKubernetesPodOperator]
-    end
-
-    subgraph TRANSFORM["🔄 Transformation Layer"]
-        direction TB
-        subgraph SPARK_CLUSTER["Apache Spark Cluster — EMR / Dataproc"]
-            direction LR
-            SPARK_STREAM[Spark Streaming\nreal-time transforms]
-            SPARK_BATCH[Spark Batch\nbulk processing]
-            SPARK_ML[Spark MLlib\nfeature engineering]
-        end
-        subgraph DBT_LAYER["dbt — SQL Transformations"]
-            direction LR
-            DBT_STAGE[Staging\nModels]
-            DBT_INT[Intermediate\nModels]
-            DBT_MART[Data Mart\nModels]
-        end
-        PANDAS[Pandas / Polars\nlight transforms]
-    end
-
-    subgraph QUALITY["✅ Data Quality — Great Expectations"]
+    subgraph ING["Ingestion layer"]
         direction LR
-        SCHEMA_CHK[Schema\nValidation]
-        NULL_CHK[Null /\nCompleteness]
-        RANGE_CHK[Range &\nUniqueness]
-        FRESHNESS[Data\nFreshness SLA]
-        ALERTS[PagerDuty\nAlerts]
+        CDC["Debezium CDC"]
+        BUS["Apache Kafka"]
+        AIR["Airbyte"]
+        PY["Custom Python"]
     end
 
-    subgraph WAREHOUSE["🏛️ Data Warehouse / Lakehouse"]
-        direction TB
-        SNOWFLAKE[(Snowflake\nCloud Warehouse)]
-        subgraph LAYERS["Warehouse Layers"]
-            direction LR
-            RAW_LAYER[RAW\nschema]
-            STAGING_LAYER[STAGING\nschema]
-            CORE_LAYER[CORE\nschema]
-            MART_LAYER[MART\nschema]
-        end
-    end
-
-    subgraph SERVING["📤 Serving & Consumption"]
-        direction TB
-        BI[BI Tools\nTableau · Looker]
-        JUPYTER[Jupyter\nData Science]
-        REVERSE_ETL[Reverse ETL\nHightouch · Census]
-        API_SERVE[FastAPI\nAnalytics API]
-        FEATURE_STORE[Feature Store\nML Serving]
-    end
-
-    subgraph META["📋 Metadata & Lineage"]
+    subgraph ORCH["Orchestration — Apache Airflow"]
         direction LR
-        DATAHUB[DataHub\nData Catalog]
-        LINEAGE[dbt Lineage\nDAG Docs]
-        COST[Cost Monitor\nQuery Spend]
+        D1["ingestion_dag"]
+        D2["transformation_dag"]
+        D3["quality_check_dag"]
+        D4["export_dag"]
     end
 
-    PG_SRC & MYSQL_SRC --> CDC --> KAFKA
-    REST_SRC & WEBHOOKS --> CUSTOM --> KAFKA
-    FILES --> AIRBYTE --> LANDING
-    EVENTS --> KAFKA
-    KAFKA --> LANDING
-    LANDING --> AIRFLOW_SCHEDULER
-    AIRFLOW_SCHEDULER --> DAGS
-    DAGS --> AIRFLOW_WORKERS
-    AIRFLOW_WORKERS --> SPARK_CLUSTER
-    AIRFLOW_WORKERS --> DBT_LAYER
-    SPARK_STREAM --> QUALITY
-    SPARK_BATCH --> QUALITY
-    DBT_LAYER --> QUALITY
-    PANDAS --> QUALITY
-    QUALITY --> ALERTS
-    QUALITY --> SNOWFLAKE
-    SNOWFLAKE --> LAYERS
-    MART_LAYER --> BI & JUPYTER & REVERSE_ETL & API_SERVE & FEATURE_STORE
-    SNOWFLAKE --> DATAHUB
-    DBT_LAYER --> LINEAGE
-    SNOWFLAKE --> COST
+    subgraph TRANS["Transformation — Spark + dbt"]
+        direction LR
+        SS["Spark Streaming"]
+        SB["Spark Batch"]
+        DS["dbt staging"]
+        DI["dbt intermediate"]
+        DM["dbt mart"]
+        PD["Pandas / Polars"]
+    end
 
-    style SOURCES fill:#1a1a2e,stroke:#4a9eff,color:#e0e0e0
-    style INGEST fill:#16213e,stroke:#4a9eff,color:#e0e0e0
-    style LANDING fill:#1e2a1e,stroke:#52c788,color:#e0e0e0
-    style ORCHESTRATION fill:#2e1a1e,stroke:#ff6b9d,color:#e0e0e0
-    style TRANSFORM fill:#1e1e2e,stroke:#7c83fd,color:#e0e0e0
-    style QUALITY fill:#2a1a1a,stroke:#ff8c42,color:#e0e0e0
-    style WAREHOUSE fill:#1a2a2a,stroke:#44b3c2,color:#e0e0e0
-    style SERVING fill:#2a2a1a,stroke:#f9ca24,color:#e0e0e0
-    style META fill:#1a1a1a,stroke:#888,color:#e0e0e0
+    subgraph QC["Data quality — Great Expectations"]
+        direction LR
+        SCH["Schema check"]
+        NUL["Null / complete"]
+        RNG["Range + unique"]
+        FRH["Freshness SLA"]
+        ALT["Alerts"]
+    end
+
+    subgraph WH["Data warehouse — Snowflake"]
+        direction LR
+        RAW[["RAW schema"]]
+        STG[["STAGING schema"]]
+        COR[["CORE schema"]]
+        MRT[["MART schema"]]
+    end
+
+    subgraph SERVE["Serving & consumption"]
+        direction LR
+        BI["BI / Looker"]
+        JUP["Jupyter"]
+        RETL["Reverse ETL"]
+        FAPI["FastAPI analytics"]
+        FS["Feature store"]
+    end
+
+    PG & MY --> CDC --> BUS
+    REST & WBH --> PY --> BUS
+    S3I --> AIR
+    KFK --> BUS
+    BUS & AIR --> ORCH
+    ORCH --> TRANS
+    SS & SB & DS & DI & DM & PD --> QC
+    QC --> ALT
+    QC --> RAW --> STG --> COR --> MRT
+    MRT --> BI & JUP & RETL & FAPI & FS
+
+    style SRC   fill:#1e1b4b,stroke:#818cf8,color:#e0e7ff
+    style ING   fill:#042f2e,stroke:#2dd4bf,color:#ccfbf1
+    style ORCH  fill:#0c1a2e,stroke:#38bdf8,color:#e0f2fe
+    style TRANS fill:#1c1917,stroke:#f59e0b,color:#fef3c7
+    style QC    fill:#450a0a,stroke:#f87171,color:#fee2e2
+    style WH    fill:#052e16,stroke:#4ade80,color:#dcfce7
+    style SERVE fill:#2d1b00,stroke:#fb923c,color:#ffedd5
 ```
 
 ---
 
 ### 4 · Streaming Event Pipeline — Kafka + Flink + ClickHouse
 
-A real-time streaming architecture for high-throughput event processing, aggregation, and analytics delivery with sub-second latency.
+Sub-second real-time pipeline processing 500k+ events/minute: producers → Kafka topics with Schema Registry → Flink jobs (enrich, dedup, aggregate, anomaly detect) with RocksDB state → ClickHouse OLAP + Redis counters → Grafana dashboards.
 
 ```mermaid
 graph TB
-    subgraph PRODUCERS["📡 Event Producers"]
+    subgraph PROD["Event producers"]
         direction LR
-        APP1[Backend\nMicroservices]
-        APP2[Mobile\nSDK Events]
-        APP3[IoT / Edge\nDevices]
-        APP4[Clickstream\nTracking]
+        BE["Backend services"]
+        MOB["Mobile SDK"]
+        IOT["IoT / Edge"]
+        CS["Clickstream tracker"]
     end
 
-    subgraph KAFKA_CLUSTER["🔀 Apache Kafka Cluster — 6 Brokers"]
+    subgraph KFK["Apache Kafka — 6 brokers · KRaft"]
         direction TB
         subgraph TOPICS["Topics"]
             direction LR
-            T_RAW[raw.events\n24-partition]
-            T_USER[user.actions\n12-partition]
-            T_ERRORS[dlq.errors\nDead Letter Queue]
+            TR["raw.events  ·  24 partitions"]
+            TU["user.actions  ·  12 partitions"]
+            TD["dlq.errors  ·  dead letter"]
         end
-        ZK[ZooKeeper /\nKRaft Consensus]
-        SR[Schema Registry\nAvro · Protobuf]
+        SR["Schema Registry — Avro"]
     end
 
-    subgraph FLINK["⚡ Apache Flink — Stream Processing"]
+    subgraph FLINK["Apache Flink — stream processing"]
         direction TB
-        subgraph JOBS["Flink Jobs"]
+        subgraph JOBS["Flink jobs"]
             direction LR
-            JOB_ENRICH[Enrichment Job\nuser + product lookup]
-            JOB_DEDUP[Deduplication Job\nbloom filter · 1h window]
-            JOB_AGG[Aggregation Job\ntumbling window · 60s]
-            JOB_DETECT[Anomaly Detection\nML model inference]
+            JE["Enrichment job"]
+            JD["Deduplication job"]
+            JA["Aggregation job"]
+            JM["Anomaly detection"]
         end
-        subgraph STATE["State Management"]
+        subgraph STATE["State management"]
             direction LR
-            ROCKSDB[RocksDB\nLocal State]
-            CHECKPOINTS[S3 Checkpoints\nfault tolerance]
+            RDB["RocksDB local state"]
+            CKP["S3 checkpoints"]
         end
-        FLINK_UI[Flink\nDashboard UI]
     end
 
-    subgraph SINKS["🗄️ Sinks & Storage"]
-        direction TB
-        CLICKHOUSE[(ClickHouse\nAnalytics OLAP)]
-        REDIS_RT[(Redis\nReal-time Counters)]
-        ES[(Elasticsearch\nSearch + Logs)]
-        S3_SINK[S3 Parquet\nLong-term Archive]
-        PG_ENRICH[(PostgreSQL\nEnriched Records)]
+    subgraph SINKS["Sinks & storage"]
+        direction LR
+        CH[("ClickHouse OLAP")]
+        RD[("Redis counters")]
+        ES[("Elasticsearch")]
+        PGE[("PostgreSQL enriched")]
+        S3P[("S3 Parquet archive")]
     end
 
-    subgraph SERVE["📊 Serving Layer"]
-        direction TB
-        GRAFANA[Grafana\nReal-time Dashboards]
-        SUPERSET[Apache Superset\nAd-hoc Analytics]
-        FASTAPI_RT[FastAPI\nReal-time Metrics API]
-        ALERT_MGR[AlertManager\nThreshold Alerts]
+    subgraph SERVE["Serving layer"]
+        direction LR
+        GRAF["Grafana dashboards"]
+        SUP["Apache Superset"]
+        FAPI["FastAPI metrics API"]
+        ALRT["AlertManager"]
     end
 
-    APP1 & APP2 & APP3 & APP4 --> T_RAW
-    T_RAW --> SR
-    T_RAW --> JOB_ENRICH
-    JOB_ENRICH --> JOB_DEDUP
-    JOB_DEDUP --> T_USER
-    T_USER --> JOB_AGG
-    T_USER --> JOB_DETECT
-    JOB_AGG --> CLICKHOUSE & REDIS_RT
-    JOB_DETECT --> ALERT_MGR
-    JOB_ENRICH --> PG_ENRICH
-    T_ERRORS --> ES
-    JOBS --> ROCKSDB --> CHECKPOINTS
-    CLICKHOUSE --> GRAFANA & SUPERSET & FASTAPI_RT
-    REDIS_RT --> FASTAPI_RT
-    ZK --> KAFKA_CLUSTER
+    BE & MOB & IOT & CS --> TR
+    TR --> SR
+    TR --> JE --> JD --> TU
+    TU --> JA & JM
+    JA --> CH & RD
+    JM --> ALRT
+    JE --> PGE
+    TD --> ES
+    JOBS --> RDB --> CKP
+    CH --> GRAF & SUP & FAPI
+    RD --> FAPI
 
-    style PRODUCERS fill:#1a2e1a,stroke:#52c788,color:#e0e0e0
-    style KAFKA_CLUSTER fill:#2e1a1a,stroke:#e74c3c,color:#e0e0e0
-    style FLINK fill:#1a1a2e,stroke:#7c83fd,color:#e0e0e0
-    style SINKS fill:#1e2a2a,stroke:#44b3c2,color:#e0e0e0
-    style SERVE fill:#2e2a1a,stroke:#f9ca24,color:#e0e0e0
+    style PROD   fill:#042f2e,stroke:#2dd4bf,color:#ccfbf1
+    style KFK    fill:#450a0a,stroke:#f87171,color:#fee2e2
+    style TOPICS fill:#7f1d1d,stroke:#fca5a5,color:#fee2e2
+    style FLINK  fill:#1e1b4b,stroke:#818cf8,color:#e0e7ff
+    style JOBS   fill:#312e81,stroke:#a5b4fc,color:#e0e7ff
+    style STATE  fill:#312e81,stroke:#a5b4fc,color:#e0e7ff
+    style SINKS  fill:#052e16,stroke:#4ade80,color:#dcfce7
+    style SERVE  fill:#1c1917,stroke:#f59e0b,color:#fef3c7
 ```
 
 ---
 
-### 5 · Tech Stack Overview
+### 5 · Full Tech Stack Map
 
 ```mermaid
 mindmap
@@ -479,63 +423,86 @@ mindmap
         SQLAlchemy async
         Alembic migrations
         Uvicorn / Gunicorn
+        slowapi rate limiting
       Django
         Django REST Framework
         SimpleJWT
         Celery + Beat
-        Django ORM
         django-tenants
+        drf-spectacular
+        django-storages
+      Flask
+        Flask-RESTful
+        Lightweight tooling
     Data Engineering
-      Pipelines
-        Apache Airflow
-        Apache Spark
-        Apache Flink
-        Kafka + Debezium
+      Orchestration
+        Apache Airflow 2.x
+        Prefect
+        Dagster
+      Batch
+        PySpark
         dbt Core
-        Airbyte
-      Warehouses
-        Snowflake
-        BigQuery
-        ClickHouse
+        Pandas / Polars
         Delta Lake
+      Streaming
+        Apache Flink
+        Kafka Streams
+        Spark Structured Streaming
+      Ingestion
+        Apache Kafka
+        Debezium CDC
+        Airbyte
+        AWS DMS
       Quality
         Great Expectations
         dbt Tests
         Soda Core
-    Languages
-      Python 3.12
-      SQL
-      Bash / Shell
-      Go basics
-      TypeScript basics
+    Warehouses
+      Snowflake
+      Google BigQuery
+      ClickHouse
+      AWS Redshift
     Databases
       PostgreSQL
       MySQL
       Redis
       MongoDB
       Elasticsearch
-      ClickHouse
+      DynamoDB
+    Languages
+      Python 3.12
+        asyncio
+        mypy
+        ruff / black
+        pytest
+      SQL
+        PostgreSQL dialect
+        BigQuery SQL
+        Snowflake SQL
+      Bash / Shell
+      Go basics
     Cloud & Infra
       AWS
-        EC2 · ECS · EKS
+        ECS · EKS
         RDS · Aurora
         S3 · Glue · EMR
         Lambda · SQS · SNS
       GCP
         BigQuery
-        Dataflow
         Cloud Composer
-      Docker
-      Kubernetes
-      Terraform
-      GitHub Actions
+        Dataflow
+        Cloud Run
+      Docker · Kubernetes
+      Terraform · AWS CDK
+      GitHub Actions · ArgoCD
     Observability
       Prometheus
       Grafana
       Loki
       Sentry
       OpenTelemetry
-      DataDog
+      DataDog APM
+      Airflow UI · Flower
 ```
 
 ---
@@ -554,7 +521,7 @@ mindmap
 
 | Framework | Use Case | Key Libraries |
 |---|---|---|
-| **FastAPI** | Async REST APIs, microservices, ML serving endpoints | Uvicorn, Gunicorn, SQLAlchemy async, Alembic, Pydantic v2, python-jose, passlib |
+| **FastAPI** | Async REST APIs, microservices, ML serving endpoints | Uvicorn, Gunicorn, SQLAlchemy async, Alembic, Pydantic v2, python-jose, passlib, slowapi |
 | **Django** | Full-stack SaaS apps, admin-heavy platforms, multi-tenant systems | DRF, drf-spectacular, SimpleJWT, Celery, django-tenants, django-storages |
 | **Flask** | Lightweight internal tools, simple webhook receivers | Flask-RESTful, Flask-SQLAlchemy |
 
