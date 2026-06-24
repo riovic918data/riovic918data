@@ -177,18 +177,3 @@ PostgreSQL schema-per-tenant Django application supporting 80+ enterprise tenant
 **Stack:** Django · DRF · PostgreSQL · Celery · Stripe · Docker · AWS RDS
 
 ---
-
-## GitHub Stats
-
-<div align="center">
-
-![GitHub Stats](https://github-readme-stats.vercel.app/api?username=russellviccaro&show_icons=true&theme=tokyonight&hide_border=true&count_private=true)
-![Top Languages](https://github-readme-stats.vercel.app/api/top-langs/?username=russellviccaro&layout=compact&theme=tokyonight&hide_border=true)
-
-</div>
-
----
-
-<div align="center">
-<sub>Built with Python, powered by coffee ☕</sub>
-</div>
